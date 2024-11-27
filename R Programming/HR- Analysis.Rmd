@@ -1,0 +1,154 @@
+---
+title: "HR Analysis Report"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Introduction
+
+This report provides an analysis of HR data, including data cleaning, exploratory data analysis (EDA), statistical analysis, and visualizations.
+
+## Load Required Libraries
+```{r setup, message=FALSE}
+install.packages("tidyverse")
+library("tidyverse")
+library("ggplot2")
+library("caret")
+
+## Load and Inspect Data
+
+hr_analysis <- read.csv("C:/Users/hp/Downloads/HR_Analytics.csv")
+
+# Display the data
+head(hr_analysis)
+tail(hr_analysis)
+
+# Summary statistics
+summary(hr_analysis)
+
+# Structure of the dataset
+str(hr_analysis)
+
+
+## Data Cleaning
+
+# Remove missing values
+hr_analysis_clean <- na.omit(hr_analysis)
+
+# Convert categorical variables to factors
+hr_analysis_clean$Gender <- as.factor(hr_analysis_clean$Gender)
+hr_analysis_clean$Department <- as.factor(hr_analysis_clean$Department)
+
+# Function to detect outliers using the IQR method
+detect_outliers_iqr <- function(hr_analysis_clean) {
+  outliers <- list()
+  for (col in colnames(hr_analysis_clean)) {
+    Q1 <- quantile(hr_analysis_clean[[col]], 0.25)
+    Q3 <- quantile(hr_analysis_clean[[col]], 0.75)
+    IQR_value <- IQR(hr_analysis_clean[[col]])
+    lower_bound <- Q1 - 1.5 * IQR_value
+    upper_bound <- Q3 + 1.5 * IQR_value
+    outliers[[col]] <- hr_analysis_clean[[col]][hr_analysis_clean[[col]] < lower_bound | hr_analysis_clean[[col]] > upper_bound]
+  }
+  return(outliers)
+}
+
+# Detect outliers
+outliers <- detect_outliers_iqr(hr_analysis_clean)
+print(outliers)
+
+##Exploratory Data Analysis (EDA)
+
+# Summary of numerical variables
+summary(hr_analysis_clean$Age)
+summary(hr_analysis_clean$MonthlyIncome)
+
+# Visualizations
+hist(hr_analysis_clean$Age)
+boxplot(hr_analysis_clean$MonthlyIncome)
+
+# Scatter plot: Age vs Monthly Income
+plot(hr_analysis_clean$Age, hr_analysis_clean$MonthlyIncome, 
+     main = "Age vs Monthly Income", 
+     xlab = "Age", 
+     ylab = "Monthly Income", 
+     col = "lightblue", 
+     pch = 19)
+
+# Correlation between Age and Monthly Income
+cor(hr_analysis_clean$Age, hr_analysis_clean$MonthlyIncome)
+
+# Boxplot: Monthly Income by Attrition
+boxplot(MonthlyIncome ~ Attrition, data = hr_analysis_clean)
+
+## Statistical Analysis
+
+# Chi-squared test
+chisq.test(table(hr_analysis_clean$Attrition, hr_analysis_clean$Gender))
+
+# t-test
+t.test(MonthlyIncome ~ Attrition, data = hr_analysis_clean)
+
+# ANOVA
+aov_result <- aov(JobSatisfaction ~ Department, data = hr_analysis_clean)
+summary(aov_result)
+
+
+## Visualizations
+
+# Age distribution by attrition
+ggplot(hr_analysis_clean, aes(x = Age, fill = Attrition)) +
+  geom_histogram(binwidth = 5, alpha = 0.7, position = "identity") +
+  labs(title = "Age Distribution by Attrition", 
+       x = "Age", 
+       y = "Count") +
+  scale_fill_manual(values = c("skyblue", "salmon")) +
+  theme_minimal()
+
+# Attrition by department
+ggplot(hr_analysis_clean, aes(x = Department, fill = Attrition)) +
+  geom_bar(position = "fill") +
+  labs(title = "Attrition by Department")
+
+## Performance Analysis
+
+# Convert PerformanceRating to a factor
+hr_analysis_clean$PerformanceRating <- as.factor(hr_analysis_clean$PerformanceRating)
+
+# Boxplot: Performance vs Job Satisfaction
+ggplot(hr_analysis_clean, aes(x = PerformanceRating, y = JobSatisfaction)) +
+  geom_boxplot() +
+  labs(title = "Performance vs Job Satisfaction")
+
+# Linear regression model
+salary_model <- lm(MonthlyIncome ~ Age + JobRole + JobLevel + Education + YearsAtCompany, data = hr_analysis_clean)
+summary(salary_model)
+
+# Salary distribution by Job Level and Job Role
+ggplot(hr_analysis_clean, aes(x = JobLevel, y = MonthlyIncome, fill = JobRole)) +
+  geom_boxplot() +
+  labs(title = "Salary Distribution by Job Level and Role")
+
+
+## Distribution Analysis
+
+# Age distribution
+ggplot(hr_analysis_clean, aes(x = Age)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Age Distribution", x = "Age", y = "Count")
+
+# Monthly income distribution
+ggplot(hr_analysis_clean, aes(x = MonthlyIncome)) +
+  geom_boxplot(fill = "lightgreen", color = "black") +
+  labs(title = "Monthly Income Distribution", x = "Monthly Income", y = "Count")
+
+# Performance vs Job Satisfaction
+ggplot(hr_analysis_clean, aes(x = PerformanceRating, y = JobSatisfaction, color = PerformanceRating)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  labs(title = "Performance vs Job Satisfaction")
+
+
